@@ -7,6 +7,7 @@ import axios from "axios";
 export default function Home() {
   const [files, setFiles] = useState<File[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [uploadStatus, setUploadStatus] = useState<{ message: string; type: "success" | "error" | "" }>({ message: "", type: "" });
 
   useEffect(() => {
     fetchUploadedFiles();
@@ -14,7 +15,7 @@ export default function Home() {
 
   const fetchUploadedFiles = async () => {
     try {
-      const response = await axios.get("http://localhost:4000/files");
+      const response = await axios.get("http://54.236.21.189:4000/files");
       setUploadedFiles(response.data);
     } catch (error) {
       console.error("Error fetching files:", error);
@@ -29,11 +30,13 @@ export default function Home() {
     formData.append("file", selectedFile);
 
     try {
-      await axios.post("http://localhost:4000/upload", formData, {
+      await axios.post("http://54.236.21.189:4000/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      setUploadStatus({ message: "File uploaded successfully!", type: "success" });
       fetchUploadedFiles();
     } catch (error) {
+      setUploadStatus({ message: "File upload failed. Please try again.", type: "error" });
       console.error("File upload failed:", error);
     }
   };
@@ -89,6 +92,13 @@ export default function Home() {
           </label>
         </div>
 
+        {/* Upload Status Message */}
+        {uploadStatus.message && (
+          <div className={`mt-4 text-center p-2 rounded-lg ${uploadStatus.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+            {uploadStatus.message}
+          </div>
+        )}
+
         {/* Display Uploaded Files */}
         {uploadedFiles.length > 0 && (
           <div className="mt-6">
@@ -97,7 +107,7 @@ export default function Home() {
               {uploadedFiles.map((file, index) => (
                 <li key={index} className="flex items-center gap-2 p-2 bg-gray-200 rounded-lg">
                   <FileText className="text-blue-600" size={20} />
-                  <a href={`http://localhost:4000/files/${file}`} className="text-gray-800 hover:underline">
+                  <a href={`http://54.236.21.189:4000/files/${file}`} className="text-gray-800 hover:underline">
                     {file}
                   </a>
                 </li>
