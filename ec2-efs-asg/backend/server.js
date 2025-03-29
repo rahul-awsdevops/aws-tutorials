@@ -1,0 +1,56 @@
+const express = require("express");
+const multer = require("multer");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config();
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+const UPLOAD_DIR = "/mnt/efs/uploads"; // Mount EFS here
+
+// Ensure upload directory exists
+if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+app.use(cors());
+app.use(express.json());
+
+// Multer setup for file storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, UPLOAD_DIR);
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + "-" + file.originalname);
+    },
+});
+const upload = multer({ storage });
+
+// API: Upload file
+app.post("/upload", upload.single("file"), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+    }
+    res.json({ message: "File uploaded successfully", filename: req.file.filename });
+});
+
+// API: Get uploaded files
+app.get("/files", (req, res) => {
+    fs.readdir(UPLOAD_DIR, (err, files) => {
+        if (err) {
+            return res.status(500).json({ error: "Failed to list files" });
+        }
+        res.json(files);
+    });
+});
+
+// API: Serve files
+app.get("/files/:filename", (req, res) => {
+    const filePath = path.join(UPLOAD_DIR, req.params.filename);
+    res.sendFile(filePath);
+});
+
+// Start server
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
