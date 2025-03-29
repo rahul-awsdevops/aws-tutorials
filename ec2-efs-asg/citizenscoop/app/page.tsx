@@ -15,7 +15,7 @@ export default function Home() {
 
   const fetchUploadedFiles = async () => {
     try {
-      const response = await axios.get("http://54.236.21.189:4000/files");
+      const response = await axios.get("/api/files");
       setUploadedFiles(response.data);
     } catch (error) {
       console.error("Error fetching files:", error);
@@ -30,7 +30,7 @@ export default function Home() {
     formData.append("file", selectedFile);
 
     try {
-      await axios.post("http://54.236.21.189:4000/upload", formData, {
+      await axios.post("/api/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setUploadStatus({ message: "File uploaded successfully!", type: "success" });
@@ -107,7 +107,7 @@ export default function Home() {
               {uploadedFiles.map((file, index) => (
                 <li key={index} className="flex items-center gap-2 p-2 bg-gray-200 rounded-lg">
                   <FileText className="text-blue-600" size={20} />
-                  <a href={`http://54.236.21.189:4000/files/${file}`} className="text-gray-800 hover:underline">
+                  <a href={`/api/files/${file}`} className="text-gray-800 hover:underline">
                     {file}
                   </a>
                 </li>

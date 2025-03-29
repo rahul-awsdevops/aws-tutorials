@@ -2,35 +2,40 @@
 set -ex
 
 # Update system and install necessary packages
-sudo dnf update -y
-sudo dnf install -y git nginx
+dnf update -y
+dnf install -y git nginx
 
-# Install Node.js 18 and PM2 (Amazon Linux 2023)
-curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
-sudo dnf install -y nodejs
-sudo npm install -g pm2
+# Install Node.js 20 and PM2 (Amazon Linux 2023)
+curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+dnf install -y nodejs
+# Verify installations
+node -v
+npm -v
+npm install -g pm2
+pm2 -version
 
 # Clone your repository (Replace with your GitHub repo)
 REPO_URL="https://github.com/your-username/your-repo.git"
-APP_DIR="/home/ec2-user/app"
+APP_DIR="/home/ec2-user/apps"
 
-if [ -d "$APP_DIR" ]; then
-    sudo rm -rf $APP_DIR
-fi
-
-git clone $REPO_URL $APP_DIR
+mkdir -p $APP_DIR
 cd $APP_DIR
 
+git clone $REPO_URL 
+
+dnf install -y amazon-efs-utils
+mkdir -p /mnt/efs/uploads
+mount -t efs fs-038f44c16485e4dc7:/ /mnt/efs/uploads
 # Install dependencies for backend
 cd backend
 npm install
 pm2 start server.js --name backend
 
 # Install dependencies for frontend
-cd ../frontend
+cd /home/ec2-user/apps/aws-tutorials/ec2-efs-asg/frontend
 npm install
 npm run build
-pm2 start npm --name frontend -- start
+pm2 start npm --name "citizenscoop" -- run start
 
 # Configure Nginx as a reverse proxy
 sudo tee /etc/nginx/nginx.conf > /dev/null <<EOL
@@ -50,7 +55,7 @@ http {
         listen 80;
         
         location /api/ {
-            proxy_pass http://localhost:5000/;
+            proxy_pass http://localhost:4000/;
             proxy_http_version 1.1;
             proxy_set_header Upgrade \$http_upgrade;
             proxy_set_header Connection 'upgrade';
@@ -74,6 +79,3 @@ EOL
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 
-# Ensure PM2 starts on boot
-pm2 save
-pm2 startup systemd -u ec2-user --hp /home/ec2-user
